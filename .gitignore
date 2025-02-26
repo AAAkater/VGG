@@ -1,0 +1,8 @@
+cache
+code
+vgg_model
+plots
+venv
+.venv
+__pycache__
+*.pyc
