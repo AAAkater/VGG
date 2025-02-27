@@ -1,4 +1,6 @@
+import json
 import os
+from datetime import datetime
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -8,16 +10,17 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 
 from dataset import train_loader, val_loader
-from model import device, vgg16
-
-criterion = nn.CrossEntropyLoss()
-
-optimizer = optim.Adam(vgg16.classifier.parameters(), lr=0.0001, weight_decay=1e-5)
-
-scheduler = StepLR(optimizer, step_size=2, gamma=0.1)
+from models.vgg_cnn import VGG16WithCNN
+from models.vgg_normal import vgg16
 
 
-def train(model, dataloader, criterion, optimizer, device):
+def train(
+    model,
+    dataloader,
+    criterion,
+    optimizer,
+    device: torch.device,
+):
     model.train()
     running_loss = 0.0
     correct = 0
@@ -47,7 +50,12 @@ def train(model, dataloader, criterion, optimizer, device):
 
 
 # 验证函数
-def validate(model, dataloader, criterion, device):
+def validate(
+    model,
+    dataloader,
+    criterion,
+    device: torch.device,
+):
     model.eval()
     running_loss = 0.0
     correct = 0
@@ -99,48 +107,82 @@ def draw(
     plt.grid(True)
 
     plt.tight_layout()
-    plt.savefig("plots/training_curves.png")
+    plt.savefig("../plots/training_curves.png")
     plt.show()
 
 
 if __name__ == "__main__":
-    num_epochs = 5
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    num_classes = 5
+    model = VGG16WithCNN(num_classes).to(device)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(
+        params=model.parameters(),
+        lr=0.001,
+        weight_decay=1e-5,
+    )
+
+    # scheduler = StepLR(optimizer, step_size=4, gamma=0.1)
+
+    num_epochs = 50
     train_losses = []  # 记录训练损失
     val_losses = []  # 记录验证损失
     train_accuracies = []  # 记录训练准确率
     val_accuracies = []  # 记录验证准确率
-    for epoch in range(num_epochs):
-        print(f"starting epoch {epoch + 1}")
-        train_loss, train_acc = train(
-            vgg16,
-            train_loader,
-            criterion,
-            optimizer,
-            device,
-        )
-        val_loss, val_acc = validate(
-            vgg16,
-            val_loader,
-            criterion,
-            device,
-        )
-        scheduler.step()
-        train_losses.append(train_loss)
-        val_losses.append(val_loss)
-        train_accuracies.append(train_acc)
-        val_accuracies.append(val_acc)
-        if (epoch + 1) % 5 == 0:
-            torch.save(vgg16.state_dict(), f"./dd/vgg16_cnn_model_{epoch + 1}.pth")
+    try:
+        for epoch in range(num_epochs):
+            print(f"starting epoch {epoch + 1}")
+            train_loss, train_acc = train(
+                model,
+                train_loader,
+                criterion,
+                optimizer,
+                device,
+            )
+            val_loss, val_acc = validate(
+                model,
+                val_loader,
+                criterion,
+                device,
+            )
+            # scheduler.step()
+            train_losses.append(train_loss)
+            val_losses.append(val_loss)
+            train_accuracies.append(train_acc)
+            val_accuracies.append(val_acc)
+            if (epoch + 1) % 5 == 0:
+                torch.save(
+                    model.state_dict(),
+                    f"../train_model/vgg16_cnn_model_{epoch + 1}.pth",
+                )
 
-        print(
-            f"Epoch [{epoch + 1}/{num_epochs}], "
-            f"Train Loss: {train_loss:.8f}, Train Acc: {train_acc:.8f}%, "
-            f"Val Loss: {val_loss:.8f}, Val Acc: {val_acc:.8f}%"
+            print(
+                f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+                f"Epoch [{epoch + 1}/{num_epochs}]\n"
+                f"Train Loss: {train_loss:.8f}, Train Acc: {train_acc:.8f}%, "
+                f"Val Loss: {val_loss:.8f}, Val Acc: {val_acc:.8f}%"
+            )
+    except KeyboardInterrupt:
+        print("训练被中断，正在保存数据...")
+    finally:
+        # 保存当前的数据
+        with open("./training_logs.json", "w") as f:
+            json.dump(
+                {
+                    "train_losses": train_losses,
+                    "val_losses": val_losses,
+                    "train_accuracies": train_accuracies,
+                    "val_accuracies": val_accuracies,
+                },
+                f,
+            )
+        print("数据已保存到 ./training_logs.json")
+        draw(
+            train_losses=train_losses,
+            val_losses=val_losses,
+            train_accuracies=train_accuracies,
+            val_accuracies=val_accuracies,
         )
-    draw(
-        train_losses=train_losses,
-        val_losses=val_losses,
-        train_accuracies=train_accuracies,
-        val_accuracies=val_accuracies,
-    )
-    print("done")
+        print("done")

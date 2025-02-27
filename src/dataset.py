@@ -34,7 +34,7 @@ val_dataset = val_dataset.map(
     batch_size=100,
     num_proc=1,
     load_from_cache_file=True,
-    cache_file_name="./cache/cached_test_dataset.arrow",
+    cache_file_name="../.cache/cached_test_dataset.arrow",
 )
 train_dataset = train_dataset.map(
     preprocess,
@@ -42,7 +42,7 @@ train_dataset = train_dataset.map(
     batch_size=100,
     num_proc=1,
     load_from_cache_file=True,
-    cache_file_name="./cache/cached_train_dataset.arrow",
+    cache_file_name="../.cache/cached_train_dataset.arrow",
 )
 
 train_dataset.set_format("torch", columns=["image", "label"])
@@ -59,20 +59,23 @@ def collate_fn(batch):
     return images, labels
 
 
+small_batch_size = 32
+
 train_loader = DataLoader(
     dataset=train_dataset,
-    batch_size=32,
+    batch_size=small_batch_size,
     shuffle=True,
     collate_fn=collate_fn,
 )
 val_loader = DataLoader(
     dataset=val_dataset,
-    batch_size=32,
+    batch_size=small_batch_size,
     shuffle=False,
     collate_fn=collate_fn,
 )
 
 if __name__ == "__main__":
+    print(train_dataset.config_name)
     print(len(train_loader))
     print(len(val_loader))
     print(train_dataset.features)
