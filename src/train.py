@@ -10,6 +10,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 
 from dataset import train_loader, val_loader
+from models.googlenet_cnn import GoogleNetNormal, GoogleNetWithCNN
 from models.vgg_cnn import VGG16WithCNN
 from models.vgg_normal import vgg16
 
@@ -115,7 +116,9 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     num_classes = 5
-    model = VGG16WithCNN(num_classes).to(device)
+    # model = VGG16WithCNN(num_classes).to(device)
+    # model = GoogleNetWithCNN(num_classes).to(device)
+    model = GoogleNetNormal(num_classes).to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
