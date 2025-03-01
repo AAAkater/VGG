@@ -11,7 +11,7 @@ def draw(
     train_accuracies: List[float],
     val_accuracies: List[float],
 ):
-    os.makedirs("plots", exist_ok=True)
+    os.makedirs("../plots", exist_ok=True)
     # 绘制损失曲线
     plt.figure(figsize=(12, 5))
 

@@ -10,9 +10,11 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 
 from dataset import train_loader, val_loader
+from models.densenet_cnn import DenseNetNormal
 from models.googlenet_cnn import GoogleNetNormal, GoogleNetWithCNN
+from models.inceptionv3_cnn import InceptionV3Normal
+from models.resnet_cnn import ResNetNormal
 from models.vgg_cnn import VGG16WithCNN
-from models.vgg_normal import vgg16
 
 
 def train(
@@ -83,7 +85,7 @@ def draw(
     train_accuracies: List[float],
     val_accuracies: List[float],
 ):
-    os.makedirs("plots", exist_ok=True)
+    os.makedirs("../plots", exist_ok=True)
     # 绘制损失曲线
     plt.figure(figsize=(12, 5))
 
@@ -118,8 +120,10 @@ if __name__ == "__main__":
     num_classes = 5
     # model = VGG16WithCNN(num_classes).to(device)
     # model = GoogleNetWithCNN(num_classes).to(device)
-    model = GoogleNetNormal(num_classes).to(device)
-
+    # model = GoogleNetNormal(num_classes).to(device)
+    # model = DenseNetNormal(num_classes).to(device)
+    model = InceptionV3Normal(num_classes).to(device)
+    # model = ResNetNormal(num_classes).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
         params=model.parameters(),
@@ -155,10 +159,10 @@ if __name__ == "__main__":
             val_losses.append(val_loss)
             train_accuracies.append(train_acc)
             val_accuracies.append(val_acc)
-            if (epoch + 1) % 5 == 0:
+            if (epoch + 1) % 10 == 0:
                 torch.save(
                     model.state_dict(),
-                    f"../train_model/vgg16_cnn_model_{epoch + 1}.pth",
+                    f"../train_model/dense_net_model_{epoch + 1}.pth",
                 )
 
             print(
